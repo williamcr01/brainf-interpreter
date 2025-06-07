@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::fs::File;
 
 #[derive(Clone)]
 enum Instructions {
@@ -127,10 +128,32 @@ fn run(instructions: Vec<Instructions>, data_array: &mut [u8; 30000]) {
 }
 
 fn main() {
-    let input = ">++++++++[<+++++++++>-]<.>++++[<+++++++>-]
-    <+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]
-    <+.<.+++.------.--------.>>>++++[<++++++++>-]<+."; // Hello World!
-    let instructions_result = parse_instructions(input);
+    let args = std::env::args().collect::<Vec<String>>();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <input_file>", args[0]);
+        std::process::exit(1);
+    }
+    let file_name: &str = match args.get(1).map(|s_ref| s_ref.as_str()) {
+        Some(path_str) => path_str,
+        None => {
+            let program_name = args.get(0)
+                                   .map_or_else(|| "brainf-interpreter".to_string(), 
+                                                |s| s.clone());
+            eprintln!("Error: No input file specified");
+            eprintln!("Usage: {} <filename.bf>", program_name);
+            std::process::exit(1);
+        }
+    };
+    if file_name.split('.').last() != Some("bf") {
+        eprintln!("Error: Input file must have a .bf extension");
+        std::process::exit(1);
+    }
+
+    let mut file = File::open(file_name).expect("Failed to open input file");
+    let mut input = String::new();
+    file.read_to_string(&mut input).expect("Failed to read input file");
+
+    let instructions_result = parse_instructions(&input);
 
     match instructions_result {
         Ok(instructions) => {
